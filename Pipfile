@@ -16,6 +16,7 @@ llama-hub = "*"
 pre-commit = "*"
 black = "*"
 tavily-python = "*"
+selenium = "*"
 
 [dev-packages]
 
