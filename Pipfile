@@ -18,6 +18,9 @@ black = "*"
 tavily-python = "*"
 selenium = "*"
 pydub = "*"
+google-api-python-client = "*"
+google-auth-oauthlib = "*"
+moviepy = "*"
 
 [dev-packages]
 ipykernel = "*"
