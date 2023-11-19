@@ -5,6 +5,11 @@ import time
 import pandas as pd
 import io
 from openai import OpenAI
+import os
+from text_to_speech import generate_text_to_speech
+import asyncio
+import nest_asyncio
+nest_asyncio.apply()
 
 # Initialize OpenAI client
 client = OpenAI()
@@ -34,7 +39,17 @@ st.sidebar.markdown("Assistant GPT")
 st.sidebar.divider()
 
 # File uploader for CSV, XLS, XLSX
-uploaded_file = st.file_uploader("Upload your file", type=["csv", "xls", "xlsx"])
+uploaded_file = st.file_uploader(
+    "Upload your file", type=["csv", "xls", "xlsx"])
+
+if st.button('Generate Podcast'):
+    mp3_path = asyncio.run(generate_text_to_speech(
+        "Hello, my name is Eleven. I am a virtual assistant."
+    ))
+    if mp3_path is not None:
+        audio_file = open(mp3_path, 'rb')
+        audio_bytes = audio_file.read()
+        st.audio(audio_bytes, format='audio/mp3')
 
 if uploaded_file is not None:
     # Determine the file type
@@ -53,13 +68,15 @@ if uploaded_file is not None:
         file_stream = io.BytesIO(json_str.encode())
 
         # Upload JSON data to OpenAI and store the file ID
-        file_response = client.files.create(file=file_stream, purpose='answers')
+        file_response = client.files.create(
+            file=file_stream, purpose='answers')
         st.session_state.file_id = file_response.id
         st.success("File uploaded successfully to OpenAI!")
 
         # Optional: Display and Download JSON
         st.text_area("JSON Output", json_str, height=300)
-        st.download_button(label="Download JSON", data=json_str, file_name="converted.json", mime="application/json")
+        st.download_button(label="Download JSON", data=json_str,
+                           file_name="converted.json", mime="application/json")
 
     except Exception as e:
         st.error(f"An error occurred: {e}")
@@ -67,7 +84,8 @@ if uploaded_file is not None:
 # Initialize OpenAI assistant
 if "assistant" not in st.session_state:
     openai.api_key = st.secrets["OPENAI_API_KEY"]
-    st.session_state.assistant = openai.beta.assistants.retrieve(st.secrets["OPENAI_ASSISTANT"])
+    st.session_state.assistant = openai.beta.assistants.retrieve(
+        st.secrets["OPENAI_ASSISTANT"])
     st.session_state.thread = client.beta.threads.create(
         metadata={'session_id': st.session_state.session_id}
     )
@@ -99,7 +117,8 @@ if prompt := st.chat_input("How can I help you?"):
     if "file_id" in st.session_state:
         message_data["file_ids"] = [st.session_state.file_id]
 
-    st.session_state.messages = client.beta.threads.messages.create(**message_data)
+    st.session_state.messages = client.beta.threads.messages.create(
+        **message_data)
 
     st.session_state.run = client.beta.threads.runs.create(
         thread_id=st.session_state.thread.id,

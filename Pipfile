@@ -8,6 +8,7 @@ openai = "*"
 streamlit = "*"
 pandas = "*"
 python-dotenv = "*"
+nest-asyncio = "*"
 
 [dev-packages]
 
