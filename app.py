@@ -1,19 +1,13 @@
 from logo import render_logo
 from assistant import PodcastAssistant
+from hosts import narrator_mapping
 import streamlit as st
 import openai
 import uuid
 import time
 import pandas as pd
 from openai import OpenAI
-
-import os
-from text_to_speech import generate_text_to_speech
-import asyncio
-import nest_asyncio
-
-nest_asyncio.apply()
-
+from text_to_speech import generate_complete_audio
 from tavily import TavilyClient
 from llama_hub.web.news import NewsArticleReader
 import re
@@ -93,19 +87,14 @@ duration = st.sidebar.selectbox(
 
 host = st.sidebar.radio(
     "Choose the Podcast Host",
-    (
-        "Conan O’Brien",
-        "Sam Altman",
-        "David Attenborough",
-    ),
+    tuple(narrator_mapping.keys())
 )
 
-if st.button("Generate Podcast"):
-    mp3_path = asyncio.run(
-        generate_text_to_speech(
-            host,
-            "Hello! My name is Eleven. I am a virtual assistant that can help you generate a podcast episode.",
-        )
+if st.button('Generate Podcast'):
+    selected_narrator = narrator_mapping[host]
+    mp3_path = generate_complete_audio(
+        selected_narrator,
+        "Hello! My name is Eleven. I am a virtual assistant that can help you generate a podcast episode."
     )
     if mp3_path is not None:
         audio_file = open(mp3_path, "rb")
@@ -142,7 +131,6 @@ When you generate the podcast, you should only provide the transcript of the pod
 """
 
 podcast_assistant = PodcastAssistant(client, tavily_client, PROMPT)
-# podcast_assistant = {"assistant": {"id": "asst_WHdn0UmJCvQHfXWpwtcYVau2"}}
 
 # Initialize the NewsArticleReader
 reader = NewsArticleReader(use_nlp=False)
@@ -160,8 +148,7 @@ with tab1:
     if "assistant" not in st.session_state:
         openai.api_key = st.secrets["OPENAI_API_KEY"]
         st.session_state.assistant = openai.beta.assistants.retrieve(
-            # podcast_assistant.assistant.id
-            "asst_WHdn0UmJCvQHfXWpwtcYVau2"
+            podcast_assistant.assistant.id
         )
         st.session_state.thread = client.beta.threads.create(
             metadata={"session_id": st.session_state.session_id}

@@ -17,8 +17,10 @@ pre-commit = "*"
 black = "*"
 tavily-python = "*"
 selenium = "*"
+pydub = "*"
 
 [dev-packages]
+ipykernel = "*"
 
 [requires]
 python_version = "3.9.18"
