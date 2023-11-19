@@ -15,6 +15,7 @@ newspaper3k = "*"
 llama-hub = "*"
 pre-commit = "*"
 black = "*"
+tavily-python = "*"
 
 [dev-packages]
 
