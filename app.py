@@ -1,5 +1,6 @@
 import os
 
+from insert import convert_mp3_to_video, get_authenticated_service, initialize_upload
 from logo import render_logo
 from assistant import PodcastAssistant
 from hosts import narrator_mapping
@@ -259,6 +260,35 @@ else:
         # In your Streamlit app
         st.markdown("##### Podcast Library")
         display_podcasts(podcasts_directory)
+
+        # st.markdown("##### Upload your podcast")
+        # video_title = st.text_input("Video Title")
+        # video_description = st.text_area("Video Description")
+        # video_tags = st.text_input("Video Tags (comma-separated)")
+        # video_category_id = st.text_input("Video Category ID", value="22")
+        #
+        # # List audio files in the specified directory
+        # audio_directory = "data/audio/body"
+        # audio_files = [f for f in os.listdir(audio_directory) if f.endswith('.mp3')]
+        # audio_file_path = st.selectbox("Select an Audio File", audio_files)
+        #
+        # output_video_file_path = "output_video.mp4"
+        #
+        # # Button to upload video
+        # if st.button("Upload Podcast to YouTube"):
+        #     # Path to the client secrets file
+        #     CLIENT_SECRETS_FILE = "client_secret.json"
+        #
+        #     # Convert MP3 to Video
+        #
+        #     convert_mp3_to_video(audio_file_path, output_video_file_path)
+        #
+        #     # Upload to YouTube
+        #     youtube = get_authenticated_service()
+        #     initialize_upload(youtube, output_video_file_path, video_title, video_description, video_tags,
+        #                       video_category_id)
+        #
+        #     st.success("Video uploaded successfully!")
 
     # Chat input and message creation with file ID
     if prompt := st.chat_input("Type /generate to create podcast"):
