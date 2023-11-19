@@ -1,3 +1,5 @@
+from logo import render_logo
+from assistant import PodcastAssistant
 import streamlit as st
 import openai
 import uuid
@@ -10,6 +12,7 @@ from text_to_speech import generate_text_to_speech
 import asyncio
 import nest_asyncio
 nest_asyncio.apply()
+
 
 # Initialize OpenAI client
 client = OpenAI()
@@ -32,11 +35,8 @@ if "retry_error" not in st.session_state:
 
 # Set up the page
 st.set_page_config(page_title="Enter title here")
-st.sidebar.title("PodcastGPT")
-st.sidebar.divider()
-st.sidebar.markdown("Your name", unsafe_allow_html=True)
-st.sidebar.markdown("Assistant GPT")
-st.sidebar.divider()
+render_logo()
+st.sidebar.markdown("### Configurations")
 
 # File uploader for CSV, XLS, XLSX
 uploaded_file = st.file_uploader(
@@ -50,42 +50,42 @@ if st.button('Generate Podcast'):
         audio_file = open(mp3_path, 'rb')
         audio_bytes = audio_file.read()
         st.audio(audio_bytes, format='audio/mp3')
+duration = st.sidebar.selectbox(
+    'Choose Podcast Duration',
+    ('1 minute', '5 minutes', '15 minutes')
+)
 
-if uploaded_file is not None:
-    # Determine the file type
-    file_type = uploaded_file.type
+host = st.sidebar.radio(
+    'Choose the Podcast Host',
+    ('Conan O’Brien', 'Joe Rogan', 'Oprah Winfrey', 'Marc Maron', 'Terry Gross')
+)
 
-    try:
-        # Read the file into a Pandas DataFrame
-        if file_type == "text/csv":
-            df = pd.read_csv(uploaded_file)
-        elif file_type in ["application/vnd.ms-excel",
-                           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]:
-            df = pd.read_excel(uploaded_file)
+genres = st.sidebar.multiselect(
+    'Select Podcast Genres',
+    ('Comedy', 'News', 'Technology', 'Education', 'Health')
+)
 
-        # Convert DataFrame to JSON
-        json_str = df.to_json(orient='records', indent=4)
-        file_stream = io.BytesIO(json_str.encode())
+PROMPT = f"""
+As a podcast generator assistant, you are tasked with creating a personalized podcast episode based on the following user preferences:
 
-        # Upload JSON data to OpenAI and store the file ID
-        file_response = client.files.create(
-            file=file_stream, purpose='answers')
-        st.session_state.file_id = file_response.id
-        st.success("File uploaded successfully to OpenAI!")
+- Duration: {duration}
+- Host: {host}
+- Genres: {', '.join(genres)}
 
-        # Optional: Display and Download JSON
-        st.text_area("JSON Output", json_str, height=300)
-        st.download_button(label="Download JSON", data=json_str,
-                           file_name="converted.json", mime="application/json")
+You are supposed to generate a podcast episode that is {duration} long, hosted by {host}, and covers topics in {' and '.join(genres)}. The episode will reflect the user's chosen genres, ensuring a tailored and engaging listening experience.
 
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
+When the user provides URLs, you should read the content of the URL, and use that as content for the podcast episode.
+
+You will only generate the podcast when the user types "/generate".
+"""
+
+podcast_assistant = PodcastAssistant(client, PROMPT)
 
 # Initialize OpenAI assistant
 if "assistant" not in st.session_state:
     openai.api_key = st.secrets["OPENAI_API_KEY"]
     st.session_state.assistant = openai.beta.assistants.retrieve(
-        st.secrets["OPENAI_ASSISTANT"])
+        podcast_assistant.assistant.id)
     st.session_state.thread = client.beta.threads.create(
         metadata={'session_id': st.session_state.session_id}
     )

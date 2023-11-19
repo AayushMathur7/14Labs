@@ -8,7 +8,12 @@ openai = "*"
 streamlit = "*"
 pandas = "*"
 python-dotenv = "*"
+<<<<<<< HEAD
 nest-asyncio = "*"
+=======
+langchain = "*"
+multion = "*"
+>>>>>>> 754ba7cf1582348b9c963349642036627efcf6c6
 
 [dev-packages]
 

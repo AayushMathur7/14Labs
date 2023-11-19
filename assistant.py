@@ -16,13 +16,3 @@ class PodcastAssistant:
             model=self._model
         )
 
-
-client = OpenAI()
-
-PROMPT = """
-    You are a joke
-"""
-
-MODEL = "gpt-4-1106-preview"
-
-podcast_assistant = PodcastAssistant(client, PROMPT, MODEL)
