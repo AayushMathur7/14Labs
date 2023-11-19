@@ -172,7 +172,8 @@ with tab1:
                         message_text = content_part.text.value
                         st.markdown(message_text)
 
-                        web_links = podcast_assistant.extract_urls(message_text)
+                        web_links = podcast_assistant.extract_urls(
+                            message_text)
 
                         if web_links:
                             fetch_and_append_articles(web_links)
