@@ -152,6 +152,8 @@ You will only generate the podcast when the user types "/generate".
 
 You will use the provided Tavily search API function to find relevant news article URLs to supplement your content when the user types "/news" followed by the topic
 
+When the user types "/news" followed by a url, reply with the user with a "article is added" message. Make sure this only works when the user types "/news" followed by a url, no other value.
+
 Do not use Tavily search API function otherwise.
 
 Do not generate the podcast otherwise.
@@ -234,16 +236,17 @@ else:
         col1, col2 = st.columns([8, 2])
 
         with col1:
-            url = st.text_input(
-                label="**Add article**", placeholder="Add URL for your podcast content"
-            )
+            st.markdown("")
+            # url = st.text_input(
+            #     label="**Add article**", placeholder="Add URL for your podcast content"
+            # )
 
         with col2:
             st.markdown("")
-            fetch_news = st.button("Fetch News")
+            # fetch_news = st.button("Fetch News")
 
-        if fetch_news and url:
-            fetch_and_append_articles([url])
+        # if fetch_news and url:
+        #     fetch_and_append_articles([url])
 
         with st.expander("**Article List**"):
             if "articles" in st.session_state and not st.session_state.articles.empty:
