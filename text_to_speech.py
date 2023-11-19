@@ -4,9 +4,16 @@ import streamlit as st
 CHUNK_SIZE = 1024
 
 
-async def generate_text_to_speech(text):
+async def generate_text_to_speech(narrator, text):
 
-    voice_id = "CYw3kZ02Hs0563khs1Fj"
+    narrator_map = {
+        "Conan O’Brien": "hpf9PPFCikOMXsxDRivV",
+        "Sam Altman": "XmgN3vGiZJ2K8Baq6Fbx",
+        "David Attenborough": "ChvVWzx9qSQwzu3Ur9M1",
+    }
+
+    voice_id = narrator_map.get(narrator, "Conan O’Brien")
+
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
 
     headers = {

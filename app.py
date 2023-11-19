@@ -41,14 +41,6 @@ st.sidebar.markdown("### Configurations")
 uploaded_file = st.file_uploader(
     "Upload your file", type=["csv", "xls", "xlsx"])
 
-if st.button('Generate Podcast'):
-    mp3_path = asyncio.run(generate_text_to_speech(
-        "Hello, my name is Eleven. I am a virtual assistant."
-    ))
-    if mp3_path is not None:
-        audio_file = open(mp3_path, 'rb')
-        audio_bytes = audio_file.read()
-        st.audio(audio_bytes, format='audio/mp3')
 duration = st.sidebar.selectbox(
     "Choose Podcast Duration", ("1 minute", "5 minutes", "15 minutes")
 )
@@ -57,12 +49,20 @@ host = st.sidebar.radio(
     "Choose the Podcast Host",
     (
         "Conan O’Brien",
-        "Joe Rogan",
-        "Oprah Winfrey",
-        "Marc Maron",
-        "Terry Gross",
+        "Sam Altman",
+        "David Attenborough",
     ),
 )
+
+if st.button('Generate Podcast'):
+    mp3_path = asyncio.run(generate_text_to_speech(
+        host,
+        "Hello! My name is Eleven. I am a virtual assistant that can help you generate a podcast episode."
+    ))
+    if mp3_path is not None:
+        audio_file = open(mp3_path, 'rb')
+        audio_bytes = audio_file.read()
+        st.audio(audio_bytes, format='audio/mp3')
 
 genres = st.sidebar.multiselect(
     "Select Podcast Genres",
