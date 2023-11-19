@@ -1,18 +1,29 @@
+import openai
 from openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
 class PodcastAssistant:
-    def __init__(self, client, model="gpt-4-1106-preview"):
+    def __init__(self, client, prompt, model="gpt-4-1106-preview"):
         self._client = client
         self._model = model
+        self._prompt = prompt
         self.assistant = self._client.beta.assistants.create(
-            name="Math Tutor",
-            instructions="You are a personal math tutor. Write and run code to answer math questions.",
-            tools=[{"type": "code_interpreter"}],
+            name="Podcast GPT",
+            instructions=self._prompt,
+            tools=[{"type": "retrieval"}],
             model=self._model
         )
 
 
 client = OpenAI()
 
+PROMPT = """
+    You are a joke
+"""
+
 MODEL = "gpt-4-1106-preview"
 
-podcast_assistant = PodcastAssistant()
+podcast_assistant = PodcastAssistant(client, PROMPT, MODEL)
