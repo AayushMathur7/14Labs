@@ -10,13 +10,13 @@ class NarratorInfo:
 
 class Narrator(Enum):
     CONAN_O_BRIEN = NarratorInfo(
-        voice_id="hpf9PPFCikOMXsxDRivV", file_id="conan_o_brien")
+        voice_id="m5ltPV1I139V2cpXC2YE", file_id="conan_o_brien")
     SAM_ALTMAN = NarratorInfo(
-        voice_id="XmgN3vGiZJ2K8Baq6Fbx", file_id="sam_altman")
+        voice_id="xfaK2RM49KgNqR0nHK59", file_id="sam_altman")
     DAVID_ATTENBOROUGH = NarratorInfo(
-        voice_id="ChvVWzx9qSQwzu3Ur9M1", file_id="david_attenborough")
+        voice_id="pRxLP8qNw6sbBiMESYOZ", file_id="david_attenborough")
     HARVEY_SPECTER = NarratorInfo(
-        voice_id="J9r4VjXXCsq6LclAu65k", file_id="harvey_specter")
+        voice_id="wVQNrcbcjm4WahKvqzbn", file_id="harvey_specter")
 
 
 
