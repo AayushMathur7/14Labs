@@ -63,7 +63,7 @@ def fetch_and_append_articles(urls):
 
 
 # Initialize OpenAI client
-client = OpenAI()
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 tavily_client = TavilyClient(api_key=st.secrets["TAVILY_API_KEY"])
 
 # Your chosen model
@@ -86,11 +86,6 @@ if "retry_error" not in st.session_state:
 st.set_page_config(page_title="Enter title here")
 render_logo()
 st.sidebar.markdown("### Configurations")
-
-# File uploader for CSV, XLS, XLSX
-uploaded_file = st.file_uploader(
-    "Upload your file", type=["csv", "xls", "xlsx"]
-)
 
 duration = st.sidebar.selectbox(
     "Choose Podcast Duration", ("1 minute", "5 minutes", "15 minutes")
@@ -158,60 +153,64 @@ if "articles" not in st.session_state:
         columns=["Title", "Publish Date", "URL"]
     )
 
-# Input for single URL
-col1, col2 = st.columns([8, 2])
+tab1, tab2 = st.tabs(["**Chat**", "**Upload articles**"])
 
-with col1:
-    url = st.text_input(
-        label="**Add article**", placeholder="Add URL for your podcast content"
-    )
-
-with col2:
-    st.markdown("")
-    fetch_news = st.button("Fetch News")
-
-if fetch_news and url:
-    fetch_and_append_articles([url])
-
-with st.expander("**Article List**"):
-    if "articles" in st.session_state and not st.session_state.articles.empty:
-        st.data_editor(
-            st.session_state.articles, hide_index=True, num_rows="dynamic"
+with tab1:
+    # Initialize OpenAI assistant
+    if "assistant" not in st.session_state:
+        openai.api_key = st.secrets["OPENAI_API_KEY"]
+        st.session_state.assistant = openai.beta.assistants.retrieve(
+            # podcast_assistant.assistant.id
+            "asst_WHdn0UmJCvQHfXWpwtcYVau2"
+        )
+        st.session_state.thread = client.beta.threads.create(
+            metadata={"session_id": st.session_state.session_id}
         )
 
-# Initialize OpenAI assistant
-if "assistant" not in st.session_state:
-    openai.api_key = st.secrets["OPENAI_API_KEY"]
-    st.session_state.assistant = openai.beta.assistants.retrieve(
-        # podcast_assistant.assistant.id
-        "asst_WHdn0UmJCvQHfXWpwtcYVau2"
-    )
-    st.session_state.thread = client.beta.threads.create(
-        metadata={"session_id": st.session_state.session_id}
-    )
+    # Display chat messages
+    elif (
+        hasattr(st.session_state.run, "status")
+        and st.session_state.run.status == "completed"
+    ):
+        st.session_state.messages = client.beta.threads.messages.list(
+            thread_id=st.session_state.thread.id
+        )
 
-# Display chat messages
-elif (
-    hasattr(st.session_state.run, "status")
-    and st.session_state.run.status == "completed"
-):
-    st.session_state.messages = client.beta.threads.messages.list(
-        thread_id=st.session_state.thread.id
-    )
+        for message in reversed(st.session_state.messages.data):
+            if message.role in ["user", "assistant"] and not message.content[
+                0
+            ].text.value.startswith("Title:"):
+                with st.chat_message(message.role):
+                    for content_part in message.content:
+                        message_text = content_part.text.value
+                        st.markdown(message_text)
 
-    for message in reversed(st.session_state.messages.data):
-        if message.role in ["user", "assistant"] and not message.content[
-            0
-        ].text.value.startswith("Title:"):
-            with st.chat_message(message.role):
-                for content_part in message.content:
-                    message_text = content_part.text.value
-                    st.markdown(message_text)
+                        web_links = podcast_assistant.extract_urls(message_text)
 
-                    web_links = podcast_assistant.extract_urls(message_text)
+                        if web_links:
+                            fetch_and_append_articles(web_links)
 
-                    if web_links:
-                        fetch_and_append_articles(web_links)
+with tab2:
+    # Input for single URL
+    col1, col2 = st.columns([8, 2])
+
+    with col1:
+        url = st.text_input(
+            label="**Add article**", placeholder="Add URL for your podcast content"
+        )
+
+    with col2:
+        st.markdown("")
+        fetch_news = st.button("Fetch News")
+
+    if fetch_news and url:
+        fetch_and_append_articles([url])
+
+    with st.expander("**Article List**"):
+        if "articles" in st.session_state and not st.session_state.articles.empty:
+            st.data_editor(
+                st.session_state.articles, hide_index=True, num_rows="dynamic"
+            )
 
 # Chat input and message creation with file ID
 if prompt := st.chat_input("Type /generate to create podcast"):
