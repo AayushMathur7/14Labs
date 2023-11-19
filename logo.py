@@ -22,7 +22,7 @@ def render_logo():
     )
 
     st.markdown(
-        '<p><span class="big-font">🎙️🔊 The Gabriel Yang Show</span> <span class="small-font">by Fourteen Labs</span></p>',
+        '<p><span class="big-font">🎙️🔊 PodcastGPT</span> <span class="small-font">by Fourteen Labs</span></p>',
         unsafe_allow_html=True,
     )
 

@@ -108,7 +108,7 @@ if "retry_error" not in st.session_state:
     st.session_state.retry_error = 0
 
 # Set up the page
-st.set_page_config(page_title="Enter title here")
+st.set_page_config(page_title="PodcastGPT")
 render_logo()
 st.sidebar.markdown("### Configurations")
 
