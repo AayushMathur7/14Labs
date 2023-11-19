@@ -261,7 +261,7 @@ else:
         display_podcasts(podcasts_directory)
 
     # Chat input and message creation with file ID
-    if prompt := st.chat_input("Type /generate to create podcast"):
+    if prompt := st.chat_input("Type \"/\" command"):
         with st.chat_message("user"):
             st.write(prompt)
 
