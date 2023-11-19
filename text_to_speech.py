@@ -1,4 +1,3 @@
-import os
 import time
 import httpx
 import streamlit as st
@@ -6,6 +5,7 @@ from hosts import Narrator
 from pydub import AudioSegment
 
 CHUNK_SIZE = 1024
+
 
 def generate_text_to_speech(narrator: Narrator, text: str):
     voice_id = narrator.value.voice_id
@@ -16,7 +16,7 @@ def generate_text_to_speech(narrator: Narrator, text: str):
     headers = {
         "Accept": "audio/mpeg",
         "Content-Type": "application/json",
-        "xi-api-key":  st.secrets["XI_API_KEY"],
+        "xi-api-key": st.secrets["XI_API_KEY"],
     }
 
     data = {
@@ -25,13 +25,16 @@ def generate_text_to_speech(narrator: Narrator, text: str):
         "voice_settings": {"stability": 0.5, "similarity_boost": 0.5}
     }
 
-    with httpx.Client() as client:
+    timeout = httpx.Timeout(120.0)
+
+    with httpx.Client(timeout=timeout) as client:
         response = client.post(url, json=data, headers=headers)
 
         with open(f'data/audio/body/{file_id}.mp3', 'wb') as f:
             for chunk in response.iter_bytes():
                 if chunk:
                     f.write(chunk)
+
 
 def add_intro_outro(narrator: Narrator):
     # Define the duration of the silence (in milliseconds)
@@ -63,6 +66,7 @@ def add_intro_outro(narrator: Narrator):
 
     # Wait for the file to be written
     time.sleep(2)
+
 
 def generate_complete_audio(narrator: Narrator, text: str):
     # Generate content audio

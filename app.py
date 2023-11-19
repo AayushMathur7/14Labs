@@ -7,6 +7,7 @@ import uuid
 import time
 import pandas as pd
 from openai import OpenAI
+
 from text_to_speech import generate_complete_audio
 from tavily import TavilyClient
 from llama_hub.web.news import NewsArticleReader
@@ -27,9 +28,9 @@ def fetch_and_append_articles(urls):
 
         # Check if the URL is already in the DataFrame
         if (
-            not st.session_state["articles"]["URL"]
-            .str.contains(escaped_url, regex=True)
-            .any()
+                not st.session_state["articles"]["URL"]
+                        .str.contains(escaped_url, regex=True)
+                        .any()
         ):
             try:
                 # Fetch document data
@@ -90,21 +91,20 @@ host = st.sidebar.radio(
     tuple(narrator_mapping.keys())
 )
 
-if st.button('Generate Podcast'):
-    selected_narrator = narrator_mapping[host]
-    mp3_path = generate_complete_audio(
-        selected_narrator,
-        "Hello! My name is Eleven. I am a virtual assistant that can help you generate a podcast episode."
-    )
-    if mp3_path is not None:
-        audio_file = open(mp3_path, "rb")
-        audio_bytes = audio_file.read()
-        st.audio(audio_bytes, format="audio/mp3")
 
 genres = st.sidebar.multiselect(
     "Select Podcast Genres",
-    ("Comedy", "News", "Technology", "Education", "Health"),
+    ("Comedy", "Serious", "Technology", "Education", "Health"),
 )
+
+st.sidebar.markdown("### Commands")
+
+st.sidebar.markdown("""
+    **`/generate`**\n
+    Create podcast transcript\n
+    **`/news <topic>`**\n
+    Source news articles
+""")
 
 PROMPT = f"""
 As a podcast generator assistant, you are tasked with creating a personalized podcast episode based on the following user preferences:
@@ -127,10 +127,21 @@ Do not generate the podcast otherwise.
 
 If you are not generating the podcast, you should respond to the user's chat messages with your findings.
 
+The podcast you generate should not include any cues. It should only include the plain transcript.
+
 When you generate the podcast, you should only provide the transcript of the podcast itself. Your response should not incorporate any bullshit before or after the content of the transcript.
 """
 
-podcast_assistant = PodcastAssistant(client, tavily_client, PROMPT)
+if "assistant" not in st.session_state:
+    st.session_state.assistant = ""
+    st.session_state.thread = client.beta.threads.create(
+        metadata={"session_id": st.session_state.session_id}
+    )
+
+if st.sidebar.button("**Create podcast assistant**"):
+    st.session_state.assistant = PodcastAssistant(client, tavily_client, PROMPT)
+    st.sidebar.markdown(f"`{st.session_state.assistant.assistant.id}`")
+    # podcast_assistant = {"assistant": {"id": "asst_WHdn0UmJCvQHfXWpwtcYVau2"}}
 
 # Initialize the NewsArticleReader
 reader = NewsArticleReader(use_nlp=False)
@@ -141,157 +152,166 @@ if "articles" not in st.session_state:
         columns=["Title", "Publish Date", "URL"]
     )
 
-tab1, tab2 = st.tabs(["**Chat**", "**Upload articles**"])
+tab1, tab2, tab3 = st.tabs(["**Chat**", "**Articles**", "**Podcasts**"])
 
-with tab1:
-    # Initialize OpenAI assistant
-    if "assistant" not in st.session_state:
-        openai.api_key = st.secrets["OPENAI_API_KEY"]
-        st.session_state.assistant = openai.beta.assistants.retrieve(
-            podcast_assistant.assistant.id
-        )
-        st.session_state.thread = client.beta.threads.create(
-            metadata={"session_id": st.session_state.session_id}
-        )
-
-    # Display chat messages
-    elif (
-        hasattr(st.session_state.run, "status")
-        and st.session_state.run.status == "completed"
-    ):
-        st.session_state.messages = client.beta.threads.messages.list(
-            thread_id=st.session_state.thread.id
-        )
-
-        for message in reversed(st.session_state.messages.data):
-            if message.role in ["user", "assistant"] and not message.content[
-                0
-            ].text.value.startswith("Title:"):
-                with st.chat_message(message.role):
-                    for content_part in message.content:
-                        message_text = content_part.text.value
-                        st.markdown(message_text)
-
-                        web_links = podcast_assistant.extract_urls(message_text)
-
-                        if web_links:
-                            fetch_and_append_articles(web_links)
-
-with tab2:
-    # Input for single URL
-    col1, col2 = st.columns([8, 2])
-
-    with col1:
-        url = st.text_input(
-            label="**Add article**", placeholder="Add URL for your podcast content"
-        )
-
-    with col2:
-        st.markdown("")
-        fetch_news = st.button("Fetch News")
-
-    if fetch_news and url:
-        fetch_and_append_articles([url])
-
-    with st.expander("**Article List**"):
-        if "articles" in st.session_state and not st.session_state.articles.empty:
-            st.data_editor(
-                st.session_state.articles, hide_index=True, num_rows="dynamic"
+if not st.session_state.assistant:
+    st.info("###### Start by creating a podcast assistant!")
+else:
+    with tab1:
+        # Display chat messages
+        if (
+                hasattr(st.session_state.run, "status")
+                and st.session_state.run.status == "completed"
+        ):
+            st.session_state.messages = client.beta.threads.messages.list(
+                thread_id=st.session_state.thread.id
             )
 
-# Chat input and message creation with file ID
-if prompt := st.chat_input("Type /generate to create podcast"):
-    with st.chat_message("user"):
-        st.write(prompt)
+            is_transcript = False
+            for message in reversed(st.session_state.messages.data):
+                if message.role in ["user", "assistant"] and not message.content[
+                    0
+                ].text.value.startswith("Title:"):
+                    with st.chat_message(message.role):
+                        for content_part in message.content:
+                            message_text = content_part.text.value
 
-    if prompt == "/generate":
-        news_content = ""
+                            if is_transcript:
+                                selected_narrator = narrator_mapping[host]
+                                with st.spinner("Generating podcast"):
+                                    mp3_path = generate_complete_audio(
+                                        selected_narrator,
+                                        message_text,
+                                    )
+                                if mp3_path is not None:
+                                    audio_file = open(mp3_path, "rb")
+                                    audio_bytes = audio_file.read()
+                                    st.audio(audio_bytes, format="audio/mp3")
+                            else:
+                                st.markdown(message_text)
+                                web_links = st.session_state.assistant.extract_urls(message_text)
+                                if web_links:
+                                    fetch_and_append_articles(web_links)
 
-        if not st.session_state.articles.empty:
-            for _, row in st.session_state.articles.iterrows():
-                url = row["URL"]
-                try:
-                    # Reload content for each URL
-                    document = reader.load_data([url])[0]
-                    title = document.metadata.get("title", "No Title")
-                    content = document.text
-                    news_content += f"Title: {title}\nContent: {content}\n\n"
-                except Exception as e:
-                    st.error(
-                        f"An error occurred while fetching content for {url}: {e}"
-                    )
+                            is_transcript = message_text.startswith("/generate")
 
-            message_data = {
-                "thread_id": st.session_state.thread.id,
-                "role": "user",
-                "content": news_content,
-            }
+    with tab2:
+        # Input for single URL
+        col1, col2 = st.columns([8, 2])
 
-            st.session_state.messages = client.beta.threads.messages.create(
-                **message_data
+        with col1:
+            url = st.text_input(
+                label="**Add article**", placeholder="Add URL for your podcast content"
             )
 
-    message_data = {
-        "thread_id": st.session_state.thread.id,
-        "role": "user",
-        "content": prompt,
-    }
+        with col2:
+            st.markdown("")
+            fetch_news = st.button("Fetch News")
 
-    # Include file ID in the request if available
-    if "file_id" in st.session_state:
-        message_data["file_ids"] = [st.session_state.file_id]
+        if fetch_news and url:
+            fetch_and_append_articles([url])
 
-    st.session_state.messages = client.beta.threads.messages.create(
-        **message_data
-    )
-
-    st.session_state.run = client.beta.threads.runs.create(
-        thread_id=st.session_state.thread.id,
-        assistant_id=st.session_state.assistant.id,
-    )
-    if st.session_state.retry_error < 3:
-        time.sleep(1)
-        st.rerun()
-
-# Handle run status
-if hasattr(st.session_state.run, "status"):
-    if st.session_state.run.status == "running":
-        with st.chat_message("assistant"):
-            st.write("Thinking ......")
-        if st.session_state.retry_error < 3:
-            time.sleep(1)
-            st.rerun()
-
-    elif st.session_state.run.status == "requires_action":
-        st.session_state.run = podcast_assistant.submit_tool_outputs(
-            client,
-            st.session_state.thread.id,
-            st.session_state.run.id,
-            st.session_state.run.required_action.submit_tool_outputs.tool_calls,
-        )
-        with st.chat_message("assistant"):
-            st.write("Fetching the latest news ......")
-        if st.session_state.retry_error < 3:
-            time.sleep(1)
-            st.rerun()
-
-    elif st.session_state.run.status == "failed":
-        st.session_state.retry_error += 1
-        with st.chat_message("assistant"):
-            if st.session_state.retry_error < 3:
-                st.write("Run failed, retrying ......")
-                time.sleep(3)
-                st.rerun()
+        with st.expander("**Article List**"):
+            if "articles" in st.session_state and not st.session_state.articles.empty:
+                st.data_editor(
+                    st.session_state.articles, hide_index=True, num_rows="dynamic"
+                )
             else:
-                st.error(
-                    "FAILED: The OpenAI API is currently processing too many requests. Please try again later ......"
+                st.error("**No articles found!**")
+
+    # Chat input and message creation with file ID
+    if prompt := st.chat_input("Type /generate to create podcast"):
+        with st.chat_message("user"):
+            st.write(prompt)
+
+        if prompt == "/generate":
+            news_content = ""
+
+            if not st.session_state.articles.empty:
+                for _, row in st.session_state.articles.iterrows():
+                    url = row["URL"]
+                    try:
+                        # Reload content for each URL
+                        document = reader.load_data([url])[0]
+                        title = document.metadata.get("title", "No Title")
+                        content = document.text
+                        news_content += f"Title: {title}\nContent: {content}\n\n"
+                    except Exception as e:
+                        st.error(
+                            f"An error occurred while fetching content for {url}: {e}"
+                        )
+
+                message_data = {
+                    "thread_id": st.session_state.thread.id,
+                    "role": "user",
+                    "content": news_content,
+                }
+
+                st.session_state.messages = client.beta.threads.messages.create(
+                    **message_data
                 )
 
-    elif st.session_state.run.status != "completed":
-        st.session_state.run = client.beta.threads.runs.retrieve(
+        message_data = {
+            "thread_id": st.session_state.thread.id,
+            "role": "user",
+            "content": prompt,
+        }
+
+        # Include file ID in the request if available
+        if "file_id" in st.session_state:
+            message_data["file_ids"] = [st.session_state.file_id]
+
+        st.session_state.messages = client.beta.threads.messages.create(
+            **message_data
+        )
+
+        st.session_state.run = client.beta.threads.runs.create(
             thread_id=st.session_state.thread.id,
-            run_id=st.session_state.run.id,
+            assistant_id=st.session_state.assistant.assistant.id,
         )
         if st.session_state.retry_error < 3:
-            time.sleep(3)
+            time.sleep(1)
             st.rerun()
+
+    # Handle run status
+    if hasattr(st.session_state.run, "status"):
+        if st.session_state.run.status == "running":
+            with st.chat_message("assistant"):
+                st.write("Thinking ......")
+            if st.session_state.retry_error < 3:
+                time.sleep(1)
+                st.rerun()
+
+        elif st.session_state.run.status == "requires_action":
+            st.session_state.run = st.session_state.assistant.submit_tool_outputs(
+                client,
+                st.session_state.thread.id,
+                st.session_state.run.id,
+                st.session_state.run.required_action.submit_tool_outputs.tool_calls,
+            )
+            with st.chat_message("assistant"):
+                st.write("Fetching the latest news ......")
+            if st.session_state.retry_error < 3:
+                time.sleep(1)
+                st.rerun()
+
+        elif st.session_state.run.status == "failed":
+            st.session_state.retry_error += 1
+            with st.chat_message("assistant"):
+                if st.session_state.retry_error < 3:
+                    st.write("Run failed, retrying ......")
+                    time.sleep(3)
+                    st.rerun()
+                else:
+                    st.error(
+                        "FAILED: The OpenAI API is currently processing too many requests. Please try again later ......"
+                    )
+
+        elif st.session_state.run.status != "completed":
+            st.session_state.run = client.beta.threads.runs.retrieve(
+                thread_id=st.session_state.thread.id,
+                run_id=st.session_state.run.id,
+            )
+            if st.session_state.retry_error < 3:
+                time.sleep(3)
+                st.rerun()
