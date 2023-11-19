@@ -1,3 +1,5 @@
+import os
+
 from logo import render_logo
 from assistant import PodcastAssistant
 from hosts import narrator_mapping
@@ -55,6 +57,34 @@ def fetch_and_append_articles(urls):
         st.session_state["articles"] = pd.concat(
             [st.session_state["articles"], new_df], ignore_index=True
         )
+
+
+def display_podcasts(directory_path):
+    # Ensure the directory exists
+    if not os.path.exists(directory_path):
+        st.error(f"Directory not found: {directory_path}")
+        return
+
+    # List all mp3 files in the directory
+    audio_files = [f for f in os.listdir(directory_path) if f.endswith('.mp3')]
+
+    if not audio_files:
+        st.write("No podcasts found in the directory.")
+        return
+
+    # Display each audio file with its name
+    for audio_file in audio_files:
+        # Assuming the file name is the podcast name
+        podcast_name = os.path.splitext(audio_file)[0]
+        st.write(f"Podcast: {podcast_name}")
+
+        # Path to the audio file
+        audio_file_path = os.path.join(directory_path, audio_file)
+
+        # Display the audio player
+        with open(audio_file_path, "rb") as file:
+            audio_bytes = file.read()
+            st.audio(audio_bytes, format="audio/mp3")
 
 
 # Initialize OpenAI client
@@ -221,6 +251,14 @@ else:
                 )
             else:
                 st.error("**No articles found!**")
+
+    with tab3:
+        # Directory containing the podcasts
+        podcasts_directory = "data/audio/body/"
+
+        # In your Streamlit app
+        st.markdown("##### Podcast Library")
+        display_podcasts(podcasts_directory)
 
     # Chat input and message creation with file ID
     if prompt := st.chat_input("Type /generate to create podcast"):

@@ -73,7 +73,7 @@ def generate_complete_audio(narrator: Narrator, text: str):
     generate_text_to_speech(narrator, text)
 
     # Add intro and outro
-    add_intro_outro(narrator)
+    # add_intro_outro(narrator)
 
     # Return the path to the complete audio
-    return f"data/audio/complete/{narrator.value.file_id}.mp3"
+    return f"data/audio/body/{narrator.value.file_id}.mp3"

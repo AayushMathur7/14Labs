@@ -19,6 +19,7 @@ class Narrator(Enum):
         voice_id="J9r4VjXXCsq6LclAu65k", file_id="harvey_specter")
 
 
+
 # Create a mapping of friendly names to enum members
 narrator_mapping = {
     "Conan O’Brien": Narrator.CONAN_O_BRIEN,
