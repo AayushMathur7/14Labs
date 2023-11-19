@@ -1,11 +1,10 @@
+from llama_hub.web.news import NewsArticleReader
 from logo import render_logo
 from assistant import PodcastAssistant
 import streamlit as st
 import openai
 import uuid
 import time
-import pandas as pd
-import io
 from openai import OpenAI
 import os
 from text_to_speech import generate_text_to_speech
@@ -51,18 +50,23 @@ if st.button('Generate Podcast'):
         audio_bytes = audio_file.read()
         st.audio(audio_bytes, format='audio/mp3')
 duration = st.sidebar.selectbox(
-    'Choose Podcast Duration',
-    ('1 minute', '5 minutes', '15 minutes')
+    "Choose Podcast Duration", ("1 minute", "5 minutes", "15 minutes")
 )
 
 host = st.sidebar.radio(
-    'Choose the Podcast Host',
-    ('Conan O’Brien', 'Joe Rogan', 'Oprah Winfrey', 'Marc Maron', 'Terry Gross')
+    "Choose the Podcast Host",
+    (
+        "Conan O’Brien",
+        "Joe Rogan",
+        "Oprah Winfrey",
+        "Marc Maron",
+        "Terry Gross",
+    ),
 )
 
 genres = st.sidebar.multiselect(
-    'Select Podcast Genres',
-    ('Comedy', 'News', 'Technology', 'Education', 'Health')
+    "Select Podcast Genres",
+    ("Comedy", "News", "Technology", "Education", "Health"),
 )
 
 PROMPT = f"""
@@ -81,17 +85,62 @@ You will only generate the podcast when the user types "/generate".
 
 podcast_assistant = PodcastAssistant(client, PROMPT)
 
+# Initialize the NewsArticleReader
+reader = NewsArticleReader(use_nlp=False)
+
+# Streamlit interface
+st.title("News Article Retriever")
+
+# Input for URLs
+urls_input = st.text_area("Enter URLs (one per line)")
+urls = urls_input.strip().split("\n")
+
+# Button to fetch news
+if st.button("Fetch News"):
+    if urls:
+        try:
+            documents = reader.load_data(urls)
+
+            # Display each article and its metadata
+            for doc in documents:
+                st.subheader(doc.metadata.get("title", "No Title"))
+                st.write("URL:", doc.metadata.get("link", "No URL"))
+                st.write(
+                    "Authors:", ", ".join(doc.metadata.get("authors", []))
+                )
+                st.write(
+                    "Publish Date:",
+                    doc.metadata.get("publish_date", "No Date"),
+                )
+                st.write(
+                    "Description:",
+                    doc.metadata.get("description", "No Description"),
+                )
+                st.write("Content:", doc.text)
+                st.write(
+                    "Keywords:", ", ".join(doc.metadata.get("keywords", []))
+                )
+                st.write("Summary:", doc.metadata.get("summary", "No Summary"))
+                st.markdown("---")
+
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
+
 # Initialize OpenAI assistant
 if "assistant" not in st.session_state:
     openai.api_key = st.secrets["OPENAI_API_KEY"]
     st.session_state.assistant = openai.beta.assistants.retrieve(
-        podcast_assistant.assistant.id)
+        podcast_assistant.assistant.id
+    )
     st.session_state.thread = client.beta.threads.create(
-        metadata={'session_id': st.session_state.session_id}
+        metadata={"session_id": st.session_state.session_id}
     )
 
 # Display chat messages
-elif hasattr(st.session_state.run, 'status') and st.session_state.run.status == "completed":
+elif (
+    hasattr(st.session_state.run, "status")
+    and st.session_state.run.status == "completed"
+):
     st.session_state.messages = client.beta.threads.messages.list(
         thread_id=st.session_state.thread.id
     )
@@ -104,13 +153,13 @@ elif hasattr(st.session_state.run, 'status') and st.session_state.run.status == 
 
 # Chat input and message creation with file ID
 if prompt := st.chat_input("How can I help you?"):
-    with st.chat_message('user'):
+    with st.chat_message("user"):
         st.write(prompt)
 
     message_data = {
         "thread_id": st.session_state.thread.id,
         "role": "user",
-        "content": prompt
+        "content": prompt,
     }
 
     # Include file ID in the request if available
@@ -118,7 +167,8 @@ if prompt := st.chat_input("How can I help you?"):
         message_data["file_ids"] = [st.session_state.file_id]
 
     st.session_state.messages = client.beta.threads.messages.create(
-        **message_data)
+        **message_data
+    )
 
     st.session_state.run = client.beta.threads.runs.create(
         thread_id=st.session_state.thread.id,
@@ -129,9 +179,9 @@ if prompt := st.chat_input("How can I help you?"):
         st.rerun()
 
 # Handle run status
-if hasattr(st.session_state.run, 'status'):
+if hasattr(st.session_state.run, "status"):
     if st.session_state.run.status == "running":
-        with st.chat_message('assistant'):
+        with st.chat_message("assistant"):
             st.write("Thinking ......")
         if st.session_state.retry_error < 3:
             time.sleep(1)
@@ -139,14 +189,15 @@ if hasattr(st.session_state.run, 'status'):
 
     elif st.session_state.run.status == "failed":
         st.session_state.retry_error += 1
-        with st.chat_message('assistant'):
+        with st.chat_message("assistant"):
             if st.session_state.retry_error < 3:
                 st.write("Run failed, retrying ......")
                 time.sleep(3)
                 st.rerun()
             else:
                 st.error(
-                    "FAILED: The OpenAI API is currently processing too many requests. Please try again later ......")
+                    "FAILED: The OpenAI API is currently processing too many requests. Please try again later ......"
+                )
 
     elif st.session_state.run.status != "completed":
         st.session_state.run = client.beta.threads.runs.retrieve(

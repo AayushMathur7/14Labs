@@ -13,6 +13,5 @@ class PodcastAssistant:
             name="Podcast GPT",
             instructions=self._prompt,
             tools=[{"type": "retrieval"}],
-            model=self._model
+            model=self._model,
         )
-

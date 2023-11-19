@@ -1,13 +1,9 @@
-import base64
 import os
-from io import BytesIO
-from typing import Optional
 
 from langchain.llms import OpenAI
 
-from langchain.agents import initialize_agent, Tool
+from langchain.agents import initialize_agent
 from langchain.agents import AgentType
-from langchain.chat_models import ChatOpenAI
 
 os.environ["LANGCHAIN_TRACING"] = "true"
 # os.environ['OPENAI_API_KEY'] = "<openai_api_key>"
@@ -15,7 +11,6 @@ from langchain.tools import StructuredTool
 from human_input import HumanInputRun
 
 
-import multion
 from multion import MultionToolSpec
 
 
@@ -39,7 +34,7 @@ def agent(query: str):
     return agent_executor.run(query)
 
 
-PROMPT = f"""
+PROMPT = """
 You are an expert AI Agent whose job is to find and get a gpu on a given service HYPERSTACK (https://www.hyperstack.cloud). Pass in the full detailed instructions exactly as below to MultiOn for browsing.
 
     Here are the high-level steps:

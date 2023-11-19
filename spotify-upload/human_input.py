@@ -3,13 +3,10 @@
 from typing import Callable, Optional, Type
 
 from langchain.callbacks.manager import CallbackManagerForToolRun
-from langchain.pydantic_v1 import Field
 from langchain.tools.base import BaseTool
 from pydantic import BaseModel, Field
 
-from typing import List, Union
-from langchain.tools import tool
-from langchain.tools import StructuredTool
+from typing import List
 
 # def web_prompt_func(prompt):
 #     # Send the prompt to the web application
@@ -39,7 +36,9 @@ class HumanInput(BaseModel):
 
 
 def get_input() -> str:
-    print("Insert your text. Enter 'q' or press Ctrl-D (or Ctrl-Z on Windows) to end.")
+    print(
+        "Insert your text. Enter 'q' or press Ctrl-D (or Ctrl-Z on Windows) to end."
+    )
     contents = []
     while True:
         try:
@@ -65,7 +64,9 @@ class HumanInputRun(BaseTool):
         "Asks a human for inputs when you need to ask a user for info or not sure what to do next."
         "The input should be a list of questions for the human."
     )
-    prompt_func: Callable[[str], None] = Field(default_factory=lambda: _print_func)
+    prompt_func: Callable[[str], None] = Field(
+        default_factory=lambda: _print_func
+    )
     input_func: Callable = Field(default_factory=lambda: input)
     args_schema: Type[BaseModel] = HumanInput
 
