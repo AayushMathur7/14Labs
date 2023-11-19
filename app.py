@@ -6,6 +6,8 @@ import pandas as pd
 import io
 from openai import OpenAI
 
+from logo import render_logo
+
 # Initialize OpenAI client
 client = OpenAI()
 
@@ -27,10 +29,7 @@ if "retry_error" not in st.session_state:
 
 # Set up the page
 st.set_page_config(page_title="Enter title here")
-st.sidebar.title("PodcastGPT")
-st.sidebar.divider()
-st.sidebar.markdown("Your name", unsafe_allow_html=True)
-st.sidebar.markdown("Assistant GPT")
+render_logo()
 st.sidebar.divider()
 
 # File uploader for CSV, XLS, XLSX
