@@ -8,6 +8,8 @@ openai = "*"
 streamlit = "*"
 pandas = "*"
 python-dotenv = "*"
+langchain = "*"
+multion = "*"
 
 [dev-packages]
 
