@@ -10,17 +10,12 @@ pandas = "*"
 python-dotenv = "*"
 <<<<<<< HEAD
 nest-asyncio = "*"
-=======
 langchain = "*"
 multion = "*"
-<<<<<<< HEAD
->>>>>>> 754ba7cf1582348b9c963349642036627efcf6c6
-=======
 newspaper3k = "*"
 llama-hub = "*"
 pre-commit = "*"
 black = "*"
->>>>>>> 836715960a7cd2e3c2925ae54a5db12d11f5daaa
 
 [dev-packages]
 
